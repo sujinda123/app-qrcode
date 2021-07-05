@@ -9,13 +9,11 @@ const MUTATION_LOGIN = gql`
 `;
 
 const MUTATION_IMAGE_UPLOAD = gql`
-    mutation UPLOAD_FILE($file: Upload!){
-        singleUploadLocal(file: $file){
-            success
-            message
+    mutation($file: Upload!, $assetID: Int!) {
+        singleUploadLocal(file: $file, assetID: $assetID) {
+            filename
             mimetype
             encoding
-            filename
             location
         }
     }

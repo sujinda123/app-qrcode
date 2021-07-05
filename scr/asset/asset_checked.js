@@ -3,10 +3,13 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, StyleSheet, Text, View, Button, Separator, TouchableOpacity, Image, Dimensions, ScrollView, Modal, TextInput, KeyboardAvoidingView, Alert, Platform } from 'react-native';
 import { Ionicons  } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useQuery} from 'react-apollo-hooks'
+import { QUERY_ASSET_CHECK } from '../GQL/query'
 
 import styleAssetChecked from '../style/styleAssetChecked'
 
 export default function Asset() {
+  const { data, error, loading, refetch } = useQuery(QUERY_ASSET_CHECK)
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [numberPackage, setNumberPackage] = useState(null)
@@ -49,8 +52,9 @@ export default function Asset() {
   // const { data, error, loading } = useQuery(QUERY_USER);
 
   // console.log(data)
-
-  return (
+  refetch()
+  if (loading) return <Text>Loading...</Text>;
+  else return (
   <SafeAreaView style={styleAssetChecked.container}>
     {/* <StatusBar hidden={true} /> */}
     <StatusBar style="light" />
@@ -112,10 +116,12 @@ export default function Asset() {
         
         <Text style={styleAssetChecked.sectionHeader}>รายการครุภัณฑ์ที่ตรวจนับแล้ว</Text>
         <View style={styleAssetChecked.gallery}>
-          <TouchableOpacity style={styleAssetChecked.btnMenu} onPress= {()=>setModalVisible(true)}   activeOpacity={0.8}>
-            <Text style={styleAssetChecked.btnText}>โต๊ะคอมพิวเตอร์ 100000000000009</Text>
-          </TouchableOpacity>
-
+          {data.getUser.USER_CHECK_ASSET.map((data, i)=> (
+            <TouchableOpacity key={i} style={styleAssetChecked.btnMenu} onPress= {()=>setModalVisible(true)}   activeOpacity={0.8}>
+              <Text style={styleAssetChecked.btnText}>โต๊ะคอมพิวเตอร์ {data.ASSET_CODE}</Text>
+            </TouchableOpacity>
+          ))}
+            
         </View>
       </View>
     </ScrollView>

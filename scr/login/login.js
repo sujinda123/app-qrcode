@@ -67,6 +67,13 @@ const login = ( { navigation } ) => {
                 <Text style={styleLogin.logoText}>Device verification by QR CODE</Text>
             </View>
 
+            <View>
+                {error ? 
+                    <Text style={styleLogin.errorText}>กรุณาตราจสอบ Username และ Password อีกครั้ง!</Text>
+                : <Text></Text>
+                }
+            </View>
+
             {/* Input Username*/}
             <View style={styleLogin.inputContainer}>
             <Ionicons name={'md-person'} size={28} color={'rgba(255,255,255,0.7)'} style={styleLogin.inputIcon} />

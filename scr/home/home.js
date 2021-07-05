@@ -10,8 +10,9 @@ import { QUERY_USER } from '../GQL/query'
 import styleHome from '../style/styleHome'
 
 const Home = ( { navigation } ) => {
+    const { data, error, loading, refetch } = useQuery(QUERY_USER)
     function navigateToAsset() {
-        navigation.navigate("Asset",{"name":"Asset"});
+        navigation.navigate("Asset",{"USER_ASSET_NUM_CHECK":`${data.getUser.USER_ASSET_NUM_CHECK}`,"USER_ASSET_NUM_NOT_CHECK":`${data.getUser.USER_ASSET_NUM_NOT_CHECK}`});
     }
     const btnLogout = async () => {
         try {
@@ -22,12 +23,13 @@ const Home = ( { navigation } ) => {
         // console.log(value);
       } catch (error) {}
     };
-    const { data, error, loading } = useQuery(QUERY_USER)
-    return(
+    refetch()
+    if (loading) return <Text>Loading...</Text>;
+    else return (
         <SafeAreaView style={styleHome.container}>
             <StatusBar style="light" />
             <View style={styleHome.userData}>
-                <Text style={{ fontSize: 20, color: '#000', fontWeight: 'bold'}}>ชื่อผู้ใช้ : {/*loading ? 'Loading...' : data.getUser.USER_FIRSTNAME + " " + data.getUser.USER_LASTNAME*/}</Text>
+                <Text style={{ fontSize: 20, color: '#000', fontWeight: 'bold'}}>ชื่อผู้ใช้ : {loading ? 'Loading...' : data.getUser.USER_FIRSTNAME + " " + data.getUser.USER_LASTNAME}</Text>
                 <Text style={{ fontSize: 18, color: '#000' }}>หน่วยงาน : {/*loading ? 'Loading..' : data.getUser.USER_LASTNAME*/}</Text>
             </View>
             <ScrollView style={styleHome.sclMenu}>

@@ -3,13 +3,25 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
 import { ApolloClient, HttpLink, InMemoryCache, ApolloLink } from 'apollo-client-preset'
+import { createUploadLink } from 'apollo-upload-client'
 import { ApolloProvider } from 'react-apollo-hooks'
 import { setContext } from '@apollo/client/link/context';
 import { getToken } from './util' 
 
+global.XMLHttpRequest =
+  global.originalXMLHttpRequest || global.XMLHttpRequest;
+global.FormData = global.originalFormData || global.FormData;
+
+if (window.FETCH_SUPPORT) {
+  window.FETCH_SUPPORT.blob = false;
+} else {
+  global.Blob = global.originalBlob || global.Blob;
+  global.FileReader = global.originalFileReader || global.FileReader;
+}
+
 const AppStack = createStackNavigator();
 
-const IP = '192.168.43.141'
+const IP = '10.1.15.110'
 const uri = `http://${IP}:4000/graphql`;
 const authLink = setContext(async (_, { headers }) => {
   const token = await getToken();
@@ -20,10 +32,11 @@ const authLink = setContext(async (_, { headers }) => {
       }
   }
 });
-const httpLink = new HttpLink({ uri });
 
+// const httpLink = HttpLink({ uri })
+const uploadLink = createUploadLink({ uri : uri});
 const client = new ApolloClient({
-  link: authLink.concat(httpLink),
+  link: authLink.concat(uploadLink),
   cache: new InMemoryCache(),
 });
 

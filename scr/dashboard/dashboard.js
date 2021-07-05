@@ -1,49 +1,129 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import { 
-  Dimensions,
   SafeAreaView, 
   Text, 
   View,
   Button,
   TouchableOpacity,
-  styleDashboardheet,
   ScrollView,
-  Platform,
-  FlatList,
-  Switch,
-  TouchableWithoutFeedback,
-  Picker,
-  ImageBackground,
   Alert,
   Modal,
   Image
  } from 'react-native';
-import Constants from 'expo-constants';
 import { Camera } from 'expo-camera';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons  } from '@expo/vector-icons';
-
+import * as Permissions from 'expo-permissions';
+import * as MediaLibrary from 'expo-media-library';
 import styleDashboard from '../style/styleDashboard'
+import * as ImagePicker from 'expo-image-picker';
+import { ReactNativeFile } from 'apollo-upload-client';
+import { useMutation, useQuery } from 'react-apollo-hooks';
+import { MUTATION_IMAGE_UPLOAD } from '../GQL/mutation'
+import { QUERY_SEARCH_ASSET } from '../GQL/query'
 
 const Dashboard = ({ navigation }) => {
     const route = useRoute();
-    const [modalVisible, setModalVisible] = useState(false);
+    const [numberPackage] = useState(route.params.data.ASSET_CODE)
+    const [uploadImage] = useMutation(MUTATION_IMAGE_UPLOAD);
+    const { loading, error, data, refetch } = useQuery(QUERY_SEARCH_ASSET, {
+      variables: { ASSET_CODE: numberPackage },
+    });
+
     const [choosenLabel, setChoosenLabel] = useState('ใช้งาน');
     const [startCamera, setStartCamera] = useState(false)
     const [hasPermission, setHasPermission] = useState(null);
     const [type, setType] = useState(Camera.Constants.Type.back);
-    const [image, setImage] = useState(null);
+    const [flash, setFlash] = useState(Camera.Constants.FlashMode.off);
+
+    const [image, setImage] = useState([]);
+    const [statusSave, setStatusSave] = useState(true);
+    const cam = useRef(null)
+
+    // Set Images
+    // data.getSearch[0].ASSET_IMAGES.map(img => setImage([...image, img]))
 
 
     const __startCamera = async () => {
       const {status} = await Camera.requestPermissionsAsync()
-      console.log(status)
+      // console.log(status)
       if (status === 'granted') {
         setStartCamera(true)
       } else {
         Alert.alert('Access denied')
       }
     }
+
+    const _takePicture = async () => {
+      let photo = await cam.current.takePictureAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        // allowsEditing: true,
+        // aspect: [3, 3],
+        quality: 0.5,
+      })
+      // console.log(cam.current.getSupportedRatiosAsync())
+      const source = photo.uri
+      if(source){
+        console.log(source)
+        handleSave(source)
+        pickImage()
+      }
+    }
+
+    const handleSave = async (photo) => {
+      const { status } = await Camera.requestPermissionsAsync()
+      if (status === 'granted') {
+        const assert = await MediaLibrary.createAssetAsync(photo)
+        // await MediaLibrary.createAlbumAsync("Images", assert)
+      }
+    }
+
+    const pickImage = async () => {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        allowsMultipleSelection: false,
+        aspect: [3, 3],
+        quality: 0.5,
+      });
+      if (!result.cancelled) {
+        setFlash(Camera.Constants.FlashMode.off)
+        setStartCamera(!startCamera);
+        // console.log(result.uri)
+        setImage([...image, result.uri]);
+        setStatusSave(false)
+      }
+    };
+
+    const onUpload_Save = async () => {
+      // const file = generateRNFile(image, `picture-${Date.now()}.jpg`);
+      await image.map(img => {
+        const file = new ReactNativeFile({
+          uri: img,
+          name: 'name.jpg',
+          type: 'image/jpeg'
+        });
+        // console.log(data.getSearch[0].ASSET_ID)
+        uploadImage({ variables: { file: file, assetID: data.getSearch[0].ASSET_ID  } })
+        setImage([])
+      })
+      setStatusSave(true)
+      refetch()
+    }
+
+    const confirmUpload_Save = () =>
+    Alert.alert(
+      "คุณต้องการบันทึก ใช่หรือไม่!",
+      "กด ตกลง เพื่อบันทึกข้อมูล",
+      [
+        {
+          text: "ยกเลิก",
+          onPress: () => console.log("Cancel Pressed"),
+          style: "cancel"
+        },
+        { text: "ตกลง", onPress: () => onUpload_Save() }
+      ]
+    );
 
     // Button back list
     useEffect(() => {
@@ -55,9 +135,9 @@ const Dashboard = ({ navigation }) => {
     }, [navigation]);
 
     // Button back sanner
-    function onBackPressed(){
-      navigation.navigate("Scanner");
-    }
+    // function onBackPressed(){
+    //   navigation.navigate("Scanner");
+    // }
 
 
     function onStatusAsset() {
@@ -78,44 +158,70 @@ const Dashboard = ({ navigation }) => {
     //     </Picker>
     //   );
     }
-
-    return (
+    if (loading) return <Text>Loading...</Text>;
+    else return (
     <SafeAreaView  style={styleDashboard.container}>
         <Modal
           animationType="slide"
           transparent={true}
-          visible={modalVisible}
+          visible={startCamera}
           onRequestClose={() => {
-            Alert.alert('Modal has been closed.');
+            setFlash(Camera.Constants.FlashMode.off)
+            setStartCamera(!startCamera);
           }}>
           <View style={styleDashboard.centeredView}>
             <View style={styleDashboard.modalView}>
               {/* <Text style={styleDashboard.modalText}>Hello World!</Text> */}
               <View style={styleDashboard.containerCamera}>
-                <Camera style={styleDashboard.camera} type={type}>
-                  <View style={styleDashboard.buttonContainer}>
+                <Camera ref={cam} flashMode={flash} style={styleDashboard.camera} type={type}>
+                  <View style={styleDashboard.headerContainer}>
                     <TouchableOpacity
-                      style={styleDashboard.button}
+                      style={{ ...styleDashboard.openButton}}
                       onPress={() => {
-                        setType(
-                          type === Camera.Constants.Type.back
-                            ? Camera.Constants.Type.front
-                            : Camera.Constants.Type.back
-                        );
+                        setFlash(Camera.Constants.FlashMode.off)
+                        setStartCamera(!startCamera);
                       }}>
-                      <Text style={styleDashboard.text}> Flip </Text>
+                      <Text style={styleDashboard.textStyle} size={20}>
+                        <Ionicons name={'close-outline'} size={40} color={'rgba(255,255,255,1)'} style={styleDashboard.inputIcon} />  
+                      </Text>
                     </TouchableOpacity>
                   </View>
+                  {/* Option Camera */}
+                  <View style={styleDashboard.optionContainer}>
+                    <TouchableOpacity 
+                      style={styleDashboard.buttonOption}
+                      onPress={() => {
+                        setFlash(
+                          flash === Camera.Constants.FlashMode.off
+                            ? Camera.Constants.FlashMode.torch
+                            : Camera.Constants.FlashMode.off
+                        );
+                      }}>
+                      <Text style={styleDashboard.text}> 
+                        { flash === Camera.Constants.FlashMode.off 
+                          ? <Ionicons name={'flash-off-outline'} size={30} color={'rgba(255,255,255,0.7)'} style={styleDashboard.inputIcon} />
+                          : <Ionicons name={'flash-outline'} size={30} color={'rgba(255,255,255,1)'} style={styleDashboard.inputIcon} />
+                        }
+                       </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={{...styleDashboard.buttonOption, height: 60, width: 60}}
+                      onPress={() => _takePicture()}>
+                      <Text style={styleDashboard.text}> 
+                        <Ionicons name={'camera-outline'} size={40} color={'rgba(255,255,255,1)'} style={styleDashboard.inputIcon} />
+                       </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styleDashboard.buttonOption}
+                      onPress={pickImage}>
+                      <Text style={styleDashboard.text}> 
+                        <Ionicons name={'image-outline'} size={30} color={'rgba(255,255,255,0.7)'} style={styleDashboard.inputIcon} />
+                       </Text>
+                    </TouchableOpacity>
+                  </View>
+                  {/* End option camera */}
                 </Camera>
               </View>
-
-              <TouchableOpacity
-                style={{ ...styleDashboard.openButton, backgroundColor: '#2196F3' }}
-                onPress={() => {
-                  setModalVisible(!modalVisible);
-                }}>
-                <Text style={styleDashboard.textStyle}>Hide Modal</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -125,33 +231,34 @@ const Dashboard = ({ navigation }) => {
           <ScrollView style={styleDashboard.sclDetail}>
             <View style={styleDashboard.gallery}>
                 <View style={styleDashboard.detailPackage}>
-                  <Text style={styleDashboard.txtDetail}>หมายเลขครุภัณฑ์ : <Text style={{ fontWeight:'bold' }}>{/*route.params.data*/}</Text></Text>
-                  <Text style={styleDashboard.txtDetail}>ชื่อ : <Text style={{ fontWeight:'bold' }}>โต๊ะคอมพิวเตอร์</Text></Text>
-                  <Text style={styleDashboard.txtDetail}>ปริมาณ : 1 ตัว</Text>
-                  <Text style={styleDashboard.txtDetail}>ต้นทุนต่อหน่วย : 3350.00</Text>
-                  <Text style={styleDashboard.txtDetail}>ยี่ห้อ : -</Text>
-                  <Text style={styleDashboard.txtDetail}>โมเดล : -</Text>
-                  <Text style={styleDashboard.txtDetail}>หมายเลขเครื่อง : -</Text>
-                  <Text style={styleDashboard.txtDetail}>สถานะ : ชำรุด</Text>
-                  <Text style={styleDashboard.txtDetail}>ผู้รับผิดชอบ : ว่าที่ ร.ต.ญ. หนึ่งฤทัย เตชะ</Text>
-                  <Text style={styleDashboard.txtDetail}>สถานที่ใช้งาน : ICT1303</Text>
-                  <Text style={styleDashboard.txtDetail}>สถานที่เดิม : ICT1303</Text>
+                  <Text style={styleDashboard.txtDetail}>หมายเลขครุภัณฑ์ : <Text style={{ fontWeight:'bold' }}>{data.getSearch[0].ASSET_CODE}</Text></Text>
+                  <Text style={styleDashboard.txtDetail}>ชื่อ : <Text style={{ fontWeight:'bold' }}>{data.getSearch[0].ASSET_NAME}</Text></Text>
+                  <Text style={styleDashboard.txtDetail}>ปริมาณ : {data.getSearch[0].ASSET_NUMBER}</Text>
+                  <Text style={styleDashboard.txtDetail}>ต้นทุนต่อหน่วย : {data.getSearch[0].ASSET_PRICE}</Text>
+                  <Text style={styleDashboard.txtDetail}>ยี่ห้อ : {data.getSearch[0].ASSET_BRAND}</Text>
+                  <Text style={styleDashboard.txtDetail}>โมเดล : {data.getSearch[0].ASSET_MODEL}</Text>
+                  <Text style={styleDashboard.txtDetail}>หมายเลขเครื่อง : {data.getSearch[0].ASSET_SERIALNUMBER}</Text>
+                  <Text style={styleDashboard.txtDetail}>สถานะ : {data.getSearch[0].ASSET_STATUS ? data.getSearch[0].ASSET_STATUS[0].STATUS_NAME : ''}</Text>
+                  <Text style={styleDashboard.txtDetail}>ผู้รับผิดชอบ : {data.getSearch[0].ASSET_USER ? data.getSearch[0].ASSET_USER[0].USER_FIRSTNAME : ''} {data.getSearch[0].ASSET_USER ? data.getSearch[0].ASSET_USER[0].USER_LASTNAME : ''}</Text>
+                  <Text style={styleDashboard.txtDetail}>สถานที่ใช้งาน : {data.getSearch[0].ASSET_ROOM ? data.getSearch[0].ASSET_ROOM[0].ROOM_NAME : ''}</Text>
+                  <Text style={styleDashboard.txtDetail}>สถานที่เดิม : {data.getSearch[0].ASSET_ORIGINAL_ROOM ? data.getSearch[0].ASSET_ORIGINAL_ROOM[0].ROOM_NAME : ''}</Text>
                 </View>
             </View>
           </ScrollView>
         </View>
 
-        <ScrollView style={styleDashboard.sclDetail}>
-          <View style={styleDashboard.platformContainer}>
-            <Text style={styleDashboard.txtTitle}>ผลการตรวจสอบครุภัณฑ์</Text>
-            <View style={styleDashboard.container}>
-                {onStatusAsset()}
-                {/* {data.getUser.ASSET_PRIVILEGE.map((data,key) => (console.log(data.STATUS_NAME)))} */}
-                {/* <Text style={styleDashboard.text}>Selected Value: {choosenLabel}</Text> */}
-            </View>
-
+        <View style={{...styleDashboard.platformContainer, flex: 0.4,}}>
+          <Text style={styleDashboard.txtTitle}>สถาณะครุภัณฑ์</Text>
+          <View style={styleDashboard.container}>
+              {onStatusAsset()}
+              {/* {data.getUser.ASSET_PRIVILEGE.map((data,key) => (console.log(data.STATUS_NAME)))} */}
+              <Text style={styleDashboard.text}>Selected Value: {data.getSearch[0].ASSET_STATUS ? data.getSearch[0].ASSET_STATUS[0].STATUS_NAME : ''}</Text>
           </View>
-          <View style={styleDashboard.platformContainer}>
+
+        </View>
+
+        
+        <View style={{...styleDashboard.platformContainer, flex: 0.4,}}>
             <Text style={styleDashboard.txtTitle}>รูปภาพครุภัณฑ์</Text>
             <View style={styleDashboard.startCameraView}>
               <TouchableOpacity style={styleDashboard.startCamera} onPress={__startCamera}>
@@ -159,20 +266,19 @@ const Dashboard = ({ navigation }) => {
                   Take picture
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styleDashboard.openButton}
-                onPress={() => {
-                  setModalVisible(true);
-                }}>
-                <Text style={styleDashboard.textStyle}>Show Modal</Text>
-              </TouchableOpacity>
-
             </View>
+            <Text style={{fontSize:15,color:'#404040'}}>   จำนวนรูปภาพ [5/5]</Text>
           </View>
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            {/* <Button title="Pick an image from camera roll" onPress={pickImage} /> */}
-            {image && <Image source={{ uri: image }} style={{ width: 200, height: 200 }} />}
-          </View>
+          <ScrollView style={styleDashboard.sclDetail}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {data.getSearch[0].ASSET_IMAGES.map((img, i) => (
+                <Image key={i} source={{ uri: `data:image/jpeg;base64,${img.IMAGE}` }} style={{width: 100, height: 100, margin: 2,}} />
+              ))}
+              {image.map((img, i) => (
+                <Image key={i} source={{ uri: img }} style={{width: 100, height: 100, margin: 2,}} />
+              ))}
+            </View>
+
 
         {/* {Platform.OS === 'android' && (
           <View style={styleDashboard.platformContainer}>
@@ -204,16 +310,16 @@ const Dashboard = ({ navigation }) => {
               data={writingDirections}
               currentIndex={writingDirectionIdx}
               onSelected={setWritingDirectionIdx}
-            />
+            />  
           </View>
         )} */}
         
       </ScrollView>
 
-      <TouchableOpacity onPress= {()=>onBackPressed()} style={styleDashboard.btnScaner}>
+      <TouchableOpacity onPress= {()=>confirmUpload_Save()} disabled={statusSave} style={{...styleDashboard.btnSave, backgroundColor:statusSave?'#7b9ba5':'#4b9cb3'}}>
         <Text style={{ fontSize: 20, color: '#fff' }}>
-          <Ionicons name={'scan'} size={18} color={'rgba(255,255,255,0.7)'} style={styleDashboard.inputIcon} />
-          Tap to Scan Again
+          <Ionicons name={'save-outline'} size={18} color={'rgba(255,255,255,0.7)'} style={{...styleDashboard.inputIcon }}/>
+          <Text> Save</Text>
         </Text>
       </TouchableOpacity>
     </SafeAreaView>

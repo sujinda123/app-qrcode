@@ -3,11 +3,15 @@ import { StatusBar } from 'expo-status-bar';
 import { Dimensions, Modal, SafeAreaView, Text, View, Button, StyleSheet, ScrollView, TouchableOpacity, TextInput, TouchableHighlight, KeyboardAvoidingView, Platform } from 'react-native';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import { Ionicons  } from '@expo/vector-icons';
+import moment from 'moment';
+import { useQuery} from 'react-apollo-hooks'
+import { QUERY_ASSET_CHECK } from '../GQL/query'
 
 import styleScanner from '../style/styleScanner'
 
 const Scanner = ({ navigation }) => {
-
+  const { data, error, loading, refetch } = useQuery(QUERY_ASSET_CHECK)
+  // console.log(data)
   const [numberPackage, setNumberPackage] = useState(null)
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
@@ -71,9 +75,9 @@ const Scanner = ({ navigation }) => {
   
   const nav = () => {console.log("Logout pressed")}
 
-  const items = [ 11,22,33,66 ];
-
-  return (
+  refetch()
+  if (loading) return <Text>Loading...</Text>;
+  else return (
     <SafeAreaView style={{flex: 1,flexDirection: 'column',justifyContent: 'flex-end',backgroundColor:"#000"}}>
       {/* <StatusBar hidden={true} /> */}
       {/* ----------- Modal Search Packet ----------- */}
@@ -164,14 +168,13 @@ const Scanner = ({ navigation }) => {
 
             <Text style={styleScanner.titleText}>รายการตรวจเช็คล่าสุด</Text>
             <ScrollView >
-              {items.map((data2,key) => (
-                <TouchableOpacity key={key} style={styleScanner.itemList} onPress={()=>{navigateToDashboard(data2)}} activeOpacity={0.8}>
-                  <Text style={styleScanner.IDItemList}>รหัส : พย7110-006-024-335</Text>
-                  <Text style={styleScanner.IDItemList}>ชื่อ : <Text style={styleScanner.nameItemList}>โต๊ะคอมพิวเตอร์</Text></Text>
-                  <Text >ผู้รับผิดชอบ : ว่าที่ ร.ต.ญ. หนึ่งฤทัย เตชะ </Text>
-                  <Text >สถานที่ : ICT1323 </Text>
-                  <Text >ผลการตรวจสอบ : ชำรุด </Text>
-                  <Text >เวลา : 21-12-63 11:41 </Text>
+              {data.getUser.USER_CHECK_ASSET.map((data, i)=> (
+                <TouchableOpacity key={i} style={styleScanner.itemList} onPress={()=>{navigateToDashboard(data)}} activeOpacity={0.8}>
+                  <Text style={styleScanner.IDItemList}>รหัส : <Text style={styleScanner.nameItemList}>{data.ASSET_CODE}</Text></Text>
+                  <Text style={styleScanner.IDItemList}>ชื่อ : <Text style={styleScanner.nameItemList}>{data.ASSET_NAME}</Text></Text>
+                  <Text style={styleScanner.IDItemList}>ผลการตรวจสอบ : <Text style={styleScanner.nameItemList}>{data.ASSET_STATUS ? data.ASSET_STATUS[0].STATUS_NAME : ''}</Text></Text>
+                  <Text style={styleScanner.IDItemList}>สถานที่ : {data.ASSET_ROOM ? data.ASSET_ROOM[0].ROOM_NAME : ''}</Text>
+                  <Text style={styleScanner.IDItemList}>เวลา : {moment(data.UPDATE_DATE).format('DD-MM-YYYY hh:mm:ss')}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView >

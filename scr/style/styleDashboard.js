@@ -15,7 +15,7 @@ const styleDashboard=StyleSheet.create({
         paddingVertical: 10,
       },
       section:{
-        flex: 0.85, 
+        flex: 1, 
       },
       txtTitle:{
         fontSize: 20,
@@ -33,8 +33,7 @@ const styleDashboard=StyleSheet.create({
       txtDetail:{
         fontSize:16,
       },
-      btnScaner:{
-        backgroundColor: '#4b9cb3',
+      btnSave:{
         marginBottom:10,
         marginTop:10,
         height:50,
@@ -42,7 +41,6 @@ const styleDashboard=StyleSheet.create({
         justifyContent: 'center'
       },
       inputIcon:{
-        marginRight: 10,
         justifyContent: 'center',
         alignItems: 'center', 
       },
@@ -80,6 +78,11 @@ const styleDashboard=StyleSheet.create({
         paddingVertical: 5,
         paddingHorizontal: 10,
       },
+      sclDetailCheck:{
+        backgroundColor: '#EEEEEE',
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+      },
       platformContainer: {
         marginTop: 8,
         borderTopWidth: 1,
@@ -101,20 +104,30 @@ const styleDashboard=StyleSheet.create({
         width:WIDTH,
         flex: 1,
       },
-      buttonContainer: {
+      headerContainer: {
+        alignItems: 'flex-end',
+        margin: 10,
+      },
+      optionContainer: {
         flex: 1,
         backgroundColor: 'transparent',
         flexDirection: 'row',
         margin: 20,
+        justifyContent: 'space-between',
+
       },
-      button: {
-        flex: 0.1,
+      buttonOption: {
         alignSelf: 'flex-end',
         alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#de5fec70',
+        width: 50,
+        height: 50,
+        borderRadius: 30,
       },
       text: {
         fontSize: 18,
-        color: 'white',
+        color: 'black',
       },
       //startCamera
       startCamera:{
@@ -145,10 +158,13 @@ const styleDashboard=StyleSheet.create({
         // marginTop: 22,
       },
       openButton: {
-        backgroundColor: '#F194FF',
-        // borderRadius: 20,
-        padding: 10,
+        backgroundColor: '#00000070',
+        // borderRadius: 20,  
+        borderRadius: 25,
+        width: 40,
+        height: 40,
         // elevation: 2,
+        justifyContent:'center'
       },
       modalView: {
         // margin: 20,
@@ -173,6 +189,12 @@ const styleDashboard=StyleSheet.create({
       modalText: {
         marginBottom: 15,
         textAlign: 'center',
+      },
+      albumImages: {
+        width: 100,
+        height: 100,
+        flex: 1,
+        flexDirection: 'row',
       },
 })
 
