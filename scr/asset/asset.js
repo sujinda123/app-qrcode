@@ -1,20 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView, StyleSheet, Text, View, Button, Separator, TouchableOpacity, Image, Dimensions, ScrollView, Platform } from 'react-native';
+import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View, Button, Separator, TouchableOpacity, Image, Dimensions, ScrollView, Platform } from 'react-native';
 import { Ionicons  } from '@expo/vector-icons';
 import { useQuery} from 'react-apollo-hooks'
 import { QUERY_ASSET_NUM } from '../GQL/query'
+import { signOut,getToken } from '../../util' 
 
 import styleAsset from '../style/styleAsset'
 
 const asset = ({ navigation }) =>{
     const { data, error, loading, refetch } = useQuery(QUERY_ASSET_NUM)
+    try {
+        if(error) error.graphQLErrors.forEach(async ({ message }) => {if(message == "LoginFalse") {
+            await signOut()
+            const value = await getToken();
+            if (value == null) navigation.navigate("Login")
+        }})
+    } catch (error) {
+    // handle error
+    }
     // console.log(data)
     useEffect(() => {
       navigation.setOptions({
         headerLeft: () => (
           <Button onPress={() => navigation.navigate("Home")} color={Platform.OS == "ios" ? "#fff" : "#164f88" } title=" ย้อนกลับ "/>
         ),
+        headerRight: () => (
+            <Button onPress={() => refetch()} color="#333333" title="Reload" />
+          ),
       });
     }, [navigation]);
 
@@ -29,7 +42,10 @@ const asset = ({ navigation }) =>{
     }
     
     refetch()
-    if (loading) return <Text>Loading...</Text>;
+    if (loading) return (
+        <View style={{flex: 1,justifyContent: "center",flexDirection: "row",justifyContent: "space-around",padding: 10}}>
+            <ActivityIndicator size="large" color="#0000ff" />
+        </View>)
     else return (
         <SafeAreaView style={styleAsset.container}>
 {/* <StatusBar hidden={true} /> */}

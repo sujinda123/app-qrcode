@@ -31,7 +31,7 @@ const styleDashboard=StyleSheet.create({
        marginHorizontal: 5,
       },
       txtDetail:{
-        fontSize:16,
+        fontSize:19,
       },
       btnSave:{
         marginBottom:10,
@@ -133,7 +133,6 @@ const styleDashboard=StyleSheet.create({
       startCamera:{
         width: 130,
         borderRadius: 4,
-        backgroundColor: '#14274e',
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',

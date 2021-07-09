@@ -29,18 +29,18 @@ const styleAssetNotChecked=StyleSheet.create({
     paddingTop: 10
   },
   btnMenu:{
-    alignItems: 'center',
+    // alignItems: 'center',
     // justifyContent: 'center',
-    flexDirection: 'row',
+    // flexDirection: 'row',
     // justifyContent: 'space-between',
     paddingLeft: 10,
     paddingRight: 10,
+    paddingTop: 4,
     borderRadius: 3,
     borderBottomRightRadius: 10,
-    margin: 6,
     backgroundColor: '#f8bcb4',
     marginTop:10,
-    height:60,
+    height:80,
     width: WIDTH,
     borderBottomWidth:1,
     borderBottomColor:'#ec4732',
@@ -51,7 +51,6 @@ const styleAssetNotChecked=StyleSheet.create({
   btnText:{
     fontSize: 18, 
     color: '#455054', 
-    fontWeight:'bold'
   },
   inputIcon:{
     // justifyContent: 'center',

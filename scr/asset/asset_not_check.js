@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView, StyleSheet, Text, View, Button, Separator, TouchableOpacity, Image, Dimensions, ScrollView, Modal, TextInput, KeyboardAvoidingView, Alert, Platform } from 'react-native';
+import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View, Button, Separator, TouchableOpacity, Image, Dimensions, ScrollView, Modal, TextInput, KeyboardAvoidingView, Alert, Platform } from 'react-native';
+import moment from 'moment';
 import { Ionicons  } from '@expo/vector-icons';
 // import * as Updates from 'expo-updates';
 import { useNavigation } from '@react-navigation/native';
@@ -23,35 +24,22 @@ const Asset = ({ navigation }) => {
       headerLeft: () => (
         <Button onPress={() => navigation.navigate("Asset")} color={Platform.OS == "ios" ? "#fff" : "#164f88" } title=" ย้อนกลับ "/>
       ),
+      headerRight: () => (
+        <Button onPress={() => refetch()} color="#333333" title="Reload" />
+      ),
     });
   }, [navigation]);
 
   function navigateToDashboard(data) {
     setModalVisible(!modalVisible);
     navigation.navigate("Dashboard",{"data": data});
-    
   }
 
-  const MessageItem = ({data}) => (
-    <TouchableOpacity style={{...styleAssetNotChecked.itemList,backgroundColor:'#98e1c9'}} activeOpacity={0.8}>
-      <Text style={styleAssetNotChecked.IDItemList}>รหัส : {data.assetNumber}</Text>
-      <Text style={styleAssetNotChecked.IDItemList}>ชื่อ : <Text style={styleAssetNotChecked.nameItemList}>{data.assetName}</Text></Text>
-      <Text >ผู้รับผิดชอบ : ว่าที่ ร.ต.ญ. หนึ่งฤทัย เตชะ </Text>
-      <Text >สถานที่ : ICT1323 </Text>
-      {/* <Text >ผลการตรวจสอบ : ชำรุด </Text> */}
-      {/* <Text >เวลา : 21-12-63 11:41 </Text> */}
-    </TouchableOpacity>
-  )
-
-  function navigateToScanner() {
-    navigation.navigate("Scanner",{"name":"Himanshu"});
-  }
-
-  // const { data, error, loading } = useQuery(QUERY_USER);
-
-  // console.log(data)
   refetch()
-  if (loading) return <Text>Loading...</Text>;
+  if (loading) return (
+    <View style={{flex: 1,justifyContent: "center",flexDirection: "row",justifyContent: "space-around",padding: 10}}>
+        <ActivityIndicator size="large" color="#0000ff" />
+    </View>)
   else return (
   <SafeAreaView style={styleAssetNotChecked.container}>
     {/* <StatusBar hidden={true} /> */}
@@ -98,34 +86,35 @@ const Asset = ({ navigation }) => {
                       <Image key={i} source={{ uri: `data:image/jpeg;base64,${img.IMAGE}` }} style={{width: 100, height: 100, margin: 2,}} />
                     )) : ''}
                     </View>
+                    <Text style={{fontSize: 20, color: '#606060', margin: 10}}>{modalData.ASSET_COUNT_IMAGES == 0 ? 'ไม่มีรูปภาพ' : ''}</Text>
 
-                    <TouchableOpacity onPress= {()=>navigateToDashboard(modalData)} style={{...styleAssetNotChecked.btnToDashboard, backgroundColor:'#7b9ba5'}}>
-                      <Text style={{ fontSize: 20, color: '#fff' }}>ตรวจนับ</Text>
+                    <TouchableOpacity onPress= {()=>navigateToDashboard(modalData)} style={{...styleAssetNotChecked.btnToDashboard, backgroundColor:'#4b9cb3'}}>
+                      <Text style={{ fontSize: 20, color: '#fff', fontWeight:'bold' }}>ตรวจนับ</Text>
                     </TouchableOpacity>
-
                   </View>
                 </ScrollView>
               </View>
             </View>
-
       </Modal>
 
-      <Ionicons name={'md-search'} size={28} color={'#00000080'} style={styleAssetNotChecked.inputIconNumberPackage} />
+      {/* <Ionicons name={'md-search'} size={28} color={'#00000080'} style={styleAssetNotChecked.inputIconNumberPackage} />
       <TextInput 
         style={styleAssetNotChecked.inputNumberPackage}
         placeholder={'ค้นหาด้วยชื่อหรือหมายเลขครุภัณฑ์'}
         onChangeText={val => setNumberPackage(val)}
         placeholderTextColor={'rgba(0,0,0,0.5)'}
         underlineColorAndroid='transparent'
-      />
+      /> */}
     <ScrollView style={styleAssetNotChecked.sclMenu}>
       <View style={styleAssetNotChecked.section}>
         
         <Text style={styleAssetNotChecked.sectionHeader}>รายการครุภัณฑ์ที่ยังไม่ได้ตรวจนับ</Text>
         <View style={styleAssetNotChecked.gallery}>
           {data.getUser.USER_NOT_CHECK_ASSET.map((data, i)=> (
-            <TouchableOpacity key={i} style={styleAssetNotChecked.btnMenu} onPress= {()=>{setModalVisible(true),setModalData(data)}}   activeOpacity={0.8}>
-              <Text style={styleAssetNotChecked.btnText}>{data.ASSET_NAME} {data.ASSET_CODE}</Text>
+            <TouchableOpacity key={i} style={styleAssetNotChecked.btnMenu} onPress= {()=>{setModalVisible(true),setModalData(data)}}    activeOpacity={0.8}>
+              <Text style={{...styleAssetNotChecked.btnText, fontWeight:'bold'}}>หมายเลข: {data.ASSET_CODE}</Text>
+              <Text style={{...styleAssetNotChecked.btnText, fontWeight:'bold'}}>ชื่อ : {data.ASSET_NAME}</Text>
+              <Text style={{...styleAssetNotChecked.btnText, fontSize: 16.5}}>ตรวจนับเมื่อ : {moment(data.UPDATE_DATE).format('YYYY-MM-DD hh.mm')}</Text>
             </TouchableOpacity>
           ))}
         </View>

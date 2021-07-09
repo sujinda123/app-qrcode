@@ -1,12 +1,13 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-
-import { ApolloClient, HttpLink, InMemoryCache, ApolloLink } from 'apollo-client-preset'
+import { Button } from 'react-native';
+import { ApolloClient, HttpLink, InMemoryCache, ApolloLink, from } from 'apollo-client-preset'
 import { createUploadLink } from 'apollo-upload-client'
 import { ApolloProvider } from 'react-apollo-hooks'
+import { onError } from 'apollo-link-error';
 import { setContext } from '@apollo/client/link/context';
-import { getToken } from './util' 
+import { getToken, signOut } from './util' 
 
 global.XMLHttpRequest =
   global.originalXMLHttpRequest || global.XMLHttpRequest;
@@ -21,7 +22,7 @@ if (window.FETCH_SUPPORT) {
 
 const AppStack = createStackNavigator();
 
-const IP = '10.1.15.110'
+const IP = '192.168.43.141'
 const uri = `http://${IP}:4000/graphql`;
 const authLink = setContext(async (_, { headers }) => {
   const token = await getToken();
@@ -33,12 +34,17 @@ const authLink = setContext(async (_, { headers }) => {
   }
 });
 
-// const httpLink = HttpLink({ uri })
-const uploadLink = createUploadLink({ uri : uri});
-const client = new ApolloClient({
-  link: authLink.concat(uploadLink),
-  cache: new InMemoryCache(),
+const errorLink = onError(({ graphQLErrors }) => {
+    graphQLErrors.forEach(({ message, locations, path }) => {if(message == "LoginFalse") signOut()})
 });
+
+
+const uploadLink = createUploadLink({ uri : uri});
+// const httpLink = HttpLink({ uri })
+const client = new ApolloClient({
+  cache: new InMemoryCache(),
+  link: from([errorLink, authLink, uploadLink]),
+})
 
 import  Login from './scr/login/login'
 import  Home from './scr/home/home'

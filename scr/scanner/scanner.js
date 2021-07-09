@@ -1,26 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Dimensions, Modal, SafeAreaView, Text, View, Button, StyleSheet, ScrollView, TouchableOpacity, TextInput, TouchableHighlight, KeyboardAvoidingView, Platform } from 'react-native';
+import { ActivityIndicator, Dimensions, Modal, SafeAreaView, Text, View, Button, StyleSheet, ScrollView, TouchableOpacity, TextInput, TouchableHighlight, KeyboardAvoidingView, Platform } from 'react-native';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import { Ionicons  } from '@expo/vector-icons';
 import moment from 'moment';
 import { useQuery} from 'react-apollo-hooks'
 import { QUERY_ASSET_CHECK } from '../GQL/query'
+import { QUERY_SEARCH_ASSET_SCANNER } from '../GQL/query'
 
 import styleScanner from '../style/styleScanner'
 
 const Scanner = ({ navigation }) => {
-  const { data, error, loading, refetch } = useQuery(QUERY_ASSET_CHECK)
+  // const { data, error, loading, refetch } = useQuery(QUERY_ASSET_CHECK)
   // console.log(data)
-  const [numberPackage, setNumberPackage] = useState(null)
+  const [numberPackage, setNumberPackage] = useState(" ")
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+
+  const queryMultiple = () => {
+    const res1 = useQuery(QUERY_ASSET_CHECK)
+    const res2 = useQuery(QUERY_SEARCH_ASSET_SCANNER, {
+      variables: { ASSET_CODE: numberPackage },
+    });
+    return [res1, res2];
+  }
+
+  const [
+    { loading: loading1, data: data1, refetch: refetch1 },
+    { loading: loading2, data: data2, refetch: refetch2 }
+  ] = queryMultiple()
 
   useEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
         <Button onPress={() => navigation.navigate("Asset")} color="#164f88" title=" ย้อนกลับ "/>
+      ),
+      headerRight: () => (
+        <Button onPress={() => refetch1()} color="#333333" title="Reload" />
       ),
     });
   }, [navigation]);
@@ -41,31 +58,22 @@ const Scanner = ({ navigation }) => {
   };
 
     const MessageItem = ({data}) => (
-    <TouchableOpacity style={{...styleScanner.itemList,backgroundColor:'#98e1c9'}} onPress={()=>{ setModalVisible(!modalVisible), navigateToDashboard(data.ASSET_CODE)}} activeOpacity={0.8}>
+    <TouchableOpacity style={{...styleScanner.itemList,backgroundColor:'#f7efca'}} onPress={()=>{ setModalVisible(!modalVisible), navigateToDashboard(data.ASSET_CODE)}} activeOpacity={0.8}>
       <Text style={styleScanner.IDItemList}>รหัส : {data.ASSET_CODE}</Text>
       <Text style={styleScanner.IDItemList}>ชื่อ : <Text style={styleScanner.nameItemList}>{data.ASSET_NAME}</Text></Text>
-      <Text >ผู้รับผิดชอบ : ว่าที่ ร.ต.ญ. หนึ่งฤทัย เตชะ </Text>
-      <Text >สถานที่ : ICT1323 </Text>
+      <Text >สถานที่ : {data.ASSET_ROOM[0].ROOM_NAME} </Text>
       {/* <Text >ผลการตรวจสอบ : ชำรุด </Text> */}
-      {/* <Text >เวลา : 21-12-63 11:41 </Text> */}
+      <Text >ตรวจนับเมื่อ : {moment(data.UPDATE_DATE).format('YYYY-MM-DD hh.mm')} </Text>
     </TouchableOpacity>
   )
     // การค้นหาครุภัณฑ์
-  function onSearch() {
-    // const { loading, error, data } = useQuery(QUERY_SEARCH, {
-    //   variables: { ASSET_CODE: numberPackage },
-    // });
-    // if (loading) return <Text>Loading...</Text>;
-    // // if (error) return `Error! ${error.message}`;
-    // // if(data.search!=null)
-    //   // console.log(data.getSearch)
-    // //   var result = data.search.map(person => ({ value: person.id, text: person.assetNumber }));
-    // //   console.log(result)
-    // return (
-    //   <View>
-    //     {data.getSearch != null ? data.getSearch.map((data,i) => (<MessageItem key={i}  data={data}/>)): null}
-    //   </View>
-    // );
+  const onSearch = () => {
+    if (loading2) return <Text>Loading...</Text>;
+    else return (
+      <View>
+        {data2.getSearch.length != 0 ? data2.getSearch.map((data,i) => (<MessageItem key={i}  data={data}/>)) : <Text>ไม่พบข้อมูล</Text>}
+      </View>
+    )
   }
 
   function navigateToDashboard(data) {
@@ -75,8 +83,11 @@ const Scanner = ({ navigation }) => {
   
   const nav = () => {console.log("Logout pressed")}
 
-  refetch()
-  if (loading) return <Text>Loading...</Text>;
+  refetch1()
+  if (loading1) return (
+    <View style={{flex: 1,justifyContent: "center",flexDirection: "row",justifyContent: "space-around",padding: 10}}>
+        <ActivityIndicator size="large" color="#0000ff" />
+    </View>)
   else return (
     <SafeAreaView style={{flex: 1,flexDirection: 'column',justifyContent: 'flex-end',backgroundColor:"#000"}}>
       {/* <StatusBar hidden={true} /> */}
@@ -86,7 +97,8 @@ const Scanner = ({ navigation }) => {
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => {
-          Alert.alert('Modal has been closed.');
+          setModalVisible(!modalVisible);
+          setNumberPackage(" ")
         }}>
           <KeyboardAvoidingView behavior={Platform.OS == "ios" ? "padding" : "height" } enabled>
             {/* Search number package & Btn closd modal */}
@@ -96,6 +108,7 @@ const Scanner = ({ navigation }) => {
                 style={styleScanner.closdBtn }
                 onPress={() => {
                   setModalVisible(!modalVisible);
+                  setNumberPackage(" ")
                 }}
                 activeOpacity={0.8}
                 >
@@ -106,7 +119,7 @@ const Scanner = ({ navigation }) => {
               <TextInput 
                 style={styleScanner.inputNumberPackage}
                 placeholder={'หมายเลขครุภัณฑ์'}
-                onChangeText={val => setNumberPackage(val)}
+                onChangeText={val =>  setNumberPackage(val)}
                 placeholderTextColor={'rgba(0,0,0,0.8)'}
                 underlineColorAndroid='transparent'
               />
@@ -123,7 +136,7 @@ const Scanner = ({ navigation }) => {
                 <View style={styleScanner.modalView}>
 
                   {/* <Text style={styleScanner.modalText}>Hello World!</Text> */}
-                  {onSearch()}
+                  { onSearch() }
 
                 </View>
               </View>
@@ -168,13 +181,13 @@ const Scanner = ({ navigation }) => {
 
             <Text style={styleScanner.titleText}>รายการตรวจเช็คล่าสุด</Text>
             <ScrollView >
-              {data.getUser.USER_CHECK_ASSET.map((data, i)=> (
-                <TouchableOpacity key={i} style={styleScanner.itemList} onPress={()=>{navigateToDashboard(data)}} activeOpacity={0.8}>
+              {data1.getUser.USER_CHECK_ASSET.map((data, i)=> (
+                <TouchableOpacity key={i} style={{...styleScanner.itemList, backgroundColor: '#c4f3c8'}} onPress={()=>{navigateToDashboard(data)}} activeOpacity={0.8}>
                   <Text style={styleScanner.IDItemList}>รหัส : <Text style={styleScanner.nameItemList}>{data.ASSET_CODE}</Text></Text>
                   <Text style={styleScanner.IDItemList}>ชื่อ : <Text style={styleScanner.nameItemList}>{data.ASSET_NAME}</Text></Text>
                   <Text style={styleScanner.IDItemList}>ผลการตรวจสอบ : <Text style={styleScanner.nameItemList}>{data.ASSET_STATUS ? data.ASSET_STATUS[0].STATUS_NAME : ''}</Text></Text>
                   <Text style={styleScanner.IDItemList}>สถานที่ : {data.ASSET_ROOM ? data.ASSET_ROOM[0].ROOM_NAME : ''}</Text>
-                  <Text style={styleScanner.IDItemList}>เวลา : {moment(data.UPDATE_DATE).format('DD-MM-YYYY hh:mm:ss')}</Text>
+                  <Text style={styleScanner.IDItemList}>ตรวจนับเมื่อ : {moment(data.UPDATE_DATE).format('YYYY-MM-DD hh.mm')}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView >

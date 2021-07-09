@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView, StyleSheet, Text, View, Button, Separator, TouchableOpacity, Image, Dimensions, ScrollView } from 'react-native';
+import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View, Button, Separator, TouchableOpacity, Image, Dimensions, ScrollView } from 'react-native';
 import { Ionicons  } from '@expo/vector-icons';
 
 import { signOut,getToken } from '../../util' 
@@ -11,6 +11,18 @@ import styleHome from '../style/styleHome'
 
 const Home = ( { navigation } ) => {
     const { data, error, loading, refetch } = useQuery(QUERY_USER)
+    
+    try {
+        if(error) error.graphQLErrors.forEach(async ({ message }) => {if(message == "LoginFalse") {
+            await signOut()
+            const value = await getToken();
+            if (value == null) navigation.navigate("Login")
+        }})
+    } catch (error) {
+    // handle error
+    }
+
+    
     function navigateToAsset() {
         navigation.navigate("Asset",{"USER_ASSET_NUM_CHECK":`${data.getUser.USER_ASSET_NUM_CHECK}`,"USER_ASSET_NUM_NOT_CHECK":`${data.getUser.USER_ASSET_NUM_NOT_CHECK}`});
     }
@@ -23,14 +35,18 @@ const Home = ( { navigation } ) => {
         // console.log(value);
       } catch (error) {}
     };
+
     refetch()
-    if (loading) return <Text>Loading...</Text>;
+    if (loading) return (
+        <View style={{flex: 1,justifyContent: "center",flexDirection: "row",justifyContent: "space-around",padding: 10}}>
+            <ActivityIndicator size="large" color="#0000ff" />
+        </View>)
     else return (
         <SafeAreaView style={styleHome.container}>
             <StatusBar style="light" />
             <View style={styleHome.userData}>
                 <Text style={{ fontSize: 20, color: '#000', fontWeight: 'bold'}}>ชื่อผู้ใช้ : {loading ? 'Loading...' : data.getUser.USER_FIRSTNAME + " " + data.getUser.USER_LASTNAME}</Text>
-                <Text style={{ fontSize: 18, color: '#000' }}>หน่วยงาน : {/*loading ? 'Loading..' : data.getUser.USER_LASTNAME*/}</Text>
+                <Text style={{ fontSize: 18, color: '#000' }}>สถานะ : {loading ? 'Loading..' : data.getUser.USER_PRIVILEGE[0].PRIVILEGE_NAME}</Text>
             </View>
             <ScrollView style={styleHome.sclMenu}>
                 <View style={styleHome.section}>

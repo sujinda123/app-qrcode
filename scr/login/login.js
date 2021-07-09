@@ -52,15 +52,22 @@ const login = ( { navigation } ) => {
         const value = await getToken();
         if (value !== null) navigation.navigate("Home");
         // console.log(value);
-    } catch (error) {}
+    } catch (error) {
+        // console.log(555555555);
+
+    }
     };
 
     chrckLogin()
-    return (
+    if (loading) return (
+        <View style={{flex: 1,justifyContent: "center",flexDirection: "row",justifyContent: "space-around",padding: 10}}>
+            <ActivityIndicator size="large" color="#0000ff" />
+        </View>)
+    else return (
         <ImageBackground source={bgImg} style={styleLogin.backgroundContainer}>
             {/* StatusBar */}
             <StatusBar style="auto" />
-
+            
             {/* Logo And logoText*/}
             <View style={styleLogin.logoContainer}>
                 <Image source={Logo} style={styleLogin.logo}/>
